@@ -1,16 +1,21 @@
-# React + Vite
+# 📚 Ders Asistanım - Akıllı Çalışma Planlayıcı
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Ders Asistanım, öğrencilerin karmaşık çalışma süreçlerini düzenlemek, konuları takip etmek ve haftalık çalışma planlarını optimize etmek için geliştirilmiş modern bir web uygulamasıdır.
 
-Currently, two official plugins are available:
+Kullanıcının çalışma kapasitesini hesaplar ve esnek gün seçimiyle en verimli çalışma programını otomatik olarak oluşturur.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Özellikler (MVP-1)
 
-## React Compiler
+- **Esnek Çalışma Günleri:** Sistemin dayattığı değil, kullanıcının belirlediği günlere (Örn: Sadece Salı ve Cuma) göre plan oluşturma.
+- **Akıllı Kapasite Kontrolü:** Toplam iş yükü ile kullanıcının haftalık boş vaktini karşılaştırarak imkansız planların önüne geçme.
+- **Dinamik Planlama Algoritması:** Sınav tarihi ve ders zorluğuna göre konuları önceliklendiren Greedy (Açgözlü) algoritma altyapısı.
+- **Detaylı Ders/Konu Yönetimi:** Derslere birden fazla alt konu ekleme ve biten konuları işaretleyip listeden düşme.
+- **Veri Güvenliği:** Tüm verilerin tarayıcıda (Local Storage) güvenle saklanması.
+- **Modern ve Ferah Arayüz:** Tailwind CSS ile tasarlanmış, sekmeli (Tab) ve kullanıcı dostu panel.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Kullanılan Teknolojiler
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Frontend Framework:** React.js (Vite ile oluşturuldu)
+- **Stilleme:** Tailwind CSS
+- **Durum Yönetimi (State):** React Hooks (`useState`, `useEffect`)
+- **Veritabanı/Depolama:** Tarayıcı Yerel Depolaması (Local Storage)

@@ -35,44 +35,33 @@ function App() {
     console.log("Yeni ders eklendi:", dersWithId);
   };
 
-  const planOlustur = (gunSayisi, saatSayisi) => {
+  // ARTIK gunSayisi DEĞİL, secilenGunler GELİYOR
+  const planOlustur = (secilenGunler, saatSayisi) => {
+    // 1. Planlanacak konuları filtrele
     const planlanacakDersler = dersler.map((ders) => ({
       ...ders,
       konular: ders.konular.filter((konu) => konu.bitti === false),
     }));
 
+    // 2. Sıralama (Sınav tarihine ve zorluğa göre - Aynen koruduk)
     const siraliDersler = planlanacakDersler.sort((a, b) => {
-      // İkisinin de sınav tarihi VAR
       if (a.sinavTarihi && b.sinavTarihi) {
         const tarihFarki = new Date(a.sinavTarihi) - new Date(b.sinavTarihi);
-
-        // Tarihler AYNI ise → Zorluğa bak
         if (tarihFarki === 0) {
           const zorlukSirasi = { zor: 1, orta: 2, kolay: 3 };
           return (
             zorlukSirasi[a.zorlukSeviyesi] - zorlukSirasi[b.zorlukSeviyesi]
           );
         }
-
-        // Tarihler FARKLI ise → Yakın olan önce (zorluk önemsiz)
         return tarihFarki;
       }
-
-      // a'nın sınav tarihi VAR, b'nin YOK → a önce
-      if (a.sinavTarihi && !b.sinavTarihi) {
-        return -1;
-      }
-
-      // b'nin sınav tarihi VAR, a'nın YOK → b önce
-      if (!a.sinavTarihi && b.sinavTarihi) {
-        return 1;
-      }
-
-      // İkisinin de sınav tarihi YOK → Zorluğa bak
+      if (a.sinavTarihi && !b.sinavTarihi) return -1;
+      if (!a.sinavTarihi && b.sinavTarihi) return 1;
       const zorlukSirasi = { zor: 1, orta: 2, kolay: 3 };
       return zorlukSirasi[a.zorlukSeviyesi] - zorlukSirasi[b.zorlukSeviyesi];
     });
 
+    // 3. Süreleri hesapla
     const derslerVeSureler = siraliDersler.map((ders) => {
       const toplamSure = ders.konular.reduce((toplam, konu) => {
         return toplam + konuSuresiHesapla(ders.zorlukSeviyesi);
@@ -82,49 +71,45 @@ function App() {
         toplamSure: toplamSure,
       };
     });
+
+    // 4. KAPASİTE KONTROLÜ (YENİ MANTIK)
     const toplamIsYuku = derslerVeSureler.reduce((toplam, ders) => {
       return toplam + ders.toplamSure;
     }, 0);
-    const calismaKapasitesi = gunSayisi * saatSayisi;
+
+    // Kapasite = Seçilen günlerin adedi * Günlük Saat
+    const calismaKapasitesi = secilenGunler.length * saatSayisi;
+
+    console.log("Seçilen Günler:", secilenGunler);
     console.log("Toplam iş yükü:", toplamIsYuku, "saat");
     console.log("Çalışma kapasitesi:", calismaKapasitesi, "saat");
 
     if (toplamIsYuku > calismaKapasitesi) {
       alert(
-        `Uyarı! ${toplamIsYuku} saat ders var ama sadece ${calismaKapasitesi} saat çalışabilirsin. Daha fazla gün/saat ekle veya bazı dersleri tamamla.`,
+        `Uyarı! ${toplamIsYuku} saat iş yükün var ama seçtiğin ${secilenGunler.length} gün için kapasiten sadece ${calismaKapasitesi} saat. Daha fazla gün seç veya konuları azalt.`,
       );
-      return; // Plan oluşturma
+      return;
     }
-    // 5. Günlere dağıt
-    const gunler = [
-      "Pazartesi",
-      "Salı",
-      "Çarşamba",
-      "Perşembe",
-      "Cuma",
-      "Cumartesi",
-      "Pazar",
-    ];
-    const plan = [];
 
+    // 5. GÜNLERE DAĞIT (BEYİN AMELİYATI BURADA)
+    const plan = [];
     let gunIndex = 0;
     let gunKalanSaat = saatSayisi;
 
-    // Her ders için
     derslerVeSureler.forEach((ders) => {
-      // Her konu için
       ders.konular.forEach((konu) => {
         let konuKalanSaat = konuSuresiHesapla(ders.zorlukSeviyesi);
 
-        // Konu bitene kadar
         while (konuKalanSaat > 0) {
-          // Bugün çalışılacak saat
+          // Güvenlik: Eğer seçtiğimiz günleri aştıysak döngüyü kır
+          if (gunIndex >= secilenGunler.length) break;
+
           const bugunCalisilacak = Math.min(konuKalanSaat, gunKalanSaat);
 
-          // Plana ekle
           if (!plan[gunIndex]) {
             plan[gunIndex] = {
-              gun: gunler[gunIndex % 7],
+              // ARTIK SIRADAN GÜNLERİ DEĞİL, KULLANICININ SEÇTİĞİ GÜNLERİ ALIYORUZ!
+              gun: secilenGunler[gunIndex],
               dersler: [],
             };
           }
@@ -135,35 +120,19 @@ function App() {
             sure: bugunCalisilacak,
           });
 
-          // Süreleri güncelle
           konuKalanSaat -= bugunCalisilacak;
           gunKalanSaat -= bugunCalisilacak;
 
-          // Gün doldu mu?
+          // Günün saati dolduysa bir sonraki güne geç
           if (gunKalanSaat === 0) {
             gunIndex++;
             gunKalanSaat = saatSayisi;
-
-            // Gün sayısı doldu mu?
-            if (gunIndex >= gunSayisi) {
-              console.log("⚠️ Günler bitti ama işler tamamlanmadı!");
-              return;
-            }
           }
         }
       });
     });
 
-    console.log("📅 PLAN:", plan);
-    console.log("✅ Süre yeterli, plan oluşturuluyor...");
-    console.log("Dersler ve süreleri:", derslerVeSureler);
-    console.log("Sıralı dersler:", siraliDersler);
-    console.log("Planlanacak dersler:", planlanacakDersler);
-    console.log("Plan oluşturuluyor...");
-    console.log("Gün:", gunSayisi, "Saat:", saatSayisi);
-    // 6. Planı kaydet
     setPlan(plan);
-    console.log("✅ Plan oluşturuldu ve kaydedildi!");
   };
 
   const dersSil = (id) => {

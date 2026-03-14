@@ -5,6 +5,7 @@ import { dersleriKaydet, dersleriYukle } from "./utils/storage";
 import PlanForm from "./components/PlanForm";
 import { konuSuresiHesapla } from "./utils/hesaplamalar";
 import PlanGoster from "./components/PlanGoster";
+import { planPuanla } from "./utils/genetikAlgoritma";
 
 function App() {
   const [dersler, setDersler] = useState(dersleriYukle());
@@ -133,6 +134,9 @@ function App() {
     });
 
     setPlan(plan);
+
+    const ceza = planPuanla(plan, dersler);
+    console.log("Plan ceza puanı:", ceza);
   };
 
   const dersSil = (id) => {

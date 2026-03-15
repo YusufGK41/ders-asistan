@@ -5,7 +5,7 @@ import { dersleriKaydet, dersleriYukle } from "./utils/storage";
 import PlanForm from "./components/PlanForm";
 import { konuSuresiHesapla } from "./utils/hesaplamalar";
 import PlanGoster from "./components/PlanGoster";
-import { planPuanla } from "./utils/genetikAlgoritma";
+import { planPuanla, rastgelePlanUret } from "./utils/genetikAlgoritma";
 
 function App() {
   const [dersler, setDersler] = useState(dersleriYukle());
@@ -135,8 +135,40 @@ function App() {
 
     setPlan(plan);
 
-    const ceza = planPuanla(plan, dersler);
-    console.log("Plan ceza puanı:", ceza);
+    // Orijinal planın puanı
+    const orijinalCeza = planPuanla(plan, dersler);
+    console.log("📊 Orijinal Plan Puanı:", orijinalCeza);
+
+    // 100 rastgele plan dene ve en iyisini bul
+    console.log("\n🎲 100 RASTGELE PLAN DENENİYOR...");
+
+    let enIyiPlan = plan;
+    let enDusukCeza = orijinalCeza;
+
+    for (let i = 0; i < 100; i++) {
+      const rastgelePlan = rastgelePlanUret(dersler, secilenGunler, saatSayisi);
+      const rastgeleCeza = planPuanla(rastgelePlan, dersler);
+
+      if (rastgeleCeza < enDusukCeza) {
+        enIyiPlan = rastgelePlan;
+        enDusukCeza = rastgeleCeza;
+        console.log(`✅ Yeni rekor! Plan ${i + 1}: ${rastgeleCeza} ceza`);
+      }
+    }
+
+    console.log(`\n🏆 EN İYİ PLAN: ${enDusukCeza} ceza`);
+    console.log(
+      "📊 Orijinal: " +
+        orijinalCeza +
+        " | En İyi: " +
+        enDusukCeza +
+        " | İyileşme: " +
+        (orijinalCeza - enDusukCeza) +
+        " puan",
+    );
+
+    // En iyi planı göster
+    setPlan(enIyiPlan);
   };
 
   const dersSil = (id) => {

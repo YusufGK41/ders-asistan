@@ -1,3 +1,12 @@
+function arrayKaristir(array) {
+  const yeniArray = [...array];
+  for (let i = yeniArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [yeniArray[i], yeniArray[j]] = [yeniArray[j], yeniArray[i]];
+  }
+  return yeniArray;
+}
+
 export function planPuanla(plan, dersler) {
   let toplamCeza = 0;
 
@@ -48,5 +57,79 @@ export function planPuanla(plan, dersler) {
     }
   });
 
+  // CEZA 3: günlük yük dengesi
+  const gunlukSaatler = plan.map((gunPlani) => {
+    return gunPlani.dersler.reduce((toplam, ders) => toplam + ders.sure, 0);
+  });
+
+  const enFazlaSaat = Math.max(...gunlukSaatler);
+  const enAzSaat = Math.min(...gunlukSaatler);
+  const fark = enFazlaSaat - enAzSaat;
+
+  if (fark > 0) {
+    toplamCeza += fark;
+    /*console.log(
+      `⚠️ Günlük yük dengesiz! En fazla: ${enFazlaSaat}h, En az: ${enAzSaat}h. Fark: ${fark}h → +${fark} ceza`,
+    );*/
+  }
+
   return toplamCeza;
+}
+
+// Rastgele bir plan üretir
+export function rastgelePlanUret(dersler, secilenGunler, saatSayisi) {
+  // 1. Planlanacak konuları filtrele
+  const planlanacakDersler = dersler.map((ders) => ({
+    ...ders,
+    konular: ders.konular.filter((konu) => konu.bitti === false),
+  }));
+
+  // 2. DERSLERİ KARIŞTIR (Sıralama yerine!)
+  const karisikDersler = arrayKaristir(planlanacakDersler);
+
+  // 3. Konuları da karıştır
+  const tumdenKarisikDersler = karisikDersler.map((ders) => ({
+    ...ders,
+    konular: arrayKaristir(ders.konular),
+  }));
+
+  // 4. Günlere dağıt (aynı mantık)
+  const plan = [];
+  let gunIndex = 0;
+  let gunKalanSaat = saatSayisi;
+
+  tumdenKarisikDersler.forEach((ders) => {
+    ders.konular.forEach((konu) => {
+      let konuKalanSaat = 5; // Şimdilik sabit (sonra düzeltiriz)
+
+      while (konuKalanSaat > 0) {
+        if (gunIndex >= secilenGunler.length) break;
+
+        const bugunCalisilacak = Math.min(konuKalanSaat, gunKalanSaat);
+
+        if (!plan[gunIndex]) {
+          plan[gunIndex] = {
+            gun: secilenGunler[gunIndex],
+            dersler: [],
+          };
+        }
+
+        plan[gunIndex].dersler.push({
+          dersAdi: ders.dersAdi,
+          konuAdi: konu.ad,
+          sure: bugunCalisilacak,
+        });
+
+        konuKalanSaat -= bugunCalisilacak;
+        gunKalanSaat -= bugunCalisilacak;
+
+        if (gunKalanSaat === 0) {
+          gunIndex++;
+          gunKalanSaat = saatSayisi;
+        }
+      }
+    });
+  });
+
+  return plan;
 }

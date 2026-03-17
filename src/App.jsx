@@ -5,7 +5,12 @@ import { dersleriKaydet, dersleriYukle } from "./utils/storage";
 import PlanForm from "./components/PlanForm";
 import { konuSuresiHesapla } from "./utils/hesaplamalar";
 import PlanGoster from "./components/PlanGoster";
-import { planPuanla, rastgelePlanUret } from "./utils/genetikAlgoritma";
+import {
+  planPuanla,
+  rastgelePlanUret,
+  ilkPopulasyonOlustur,
+  secilenleriBul,
+} from "./utils/genetikAlgoritma";
 
 function App() {
   const [dersler, setDersler] = useState(dersleriYukle());
@@ -135,40 +140,41 @@ function App() {
 
     setPlan(plan);
 
-    // Orijinal planın puanı
-    const orijinalCeza = planPuanla(plan, dersler);
-    console.log("📊 Orijinal Plan Puanı:", orijinalCeza);
+    // ===== GENETİK ALGORİTMA TESTİ =====
 
-    // 100 rastgele plan dene ve en iyisini bul
-    console.log("\n🎲 100 RASTGELE PLAN DENENİYOR...");
-
-    let enIyiPlan = plan;
-    let enDusukCeza = orijinalCeza;
-
-    for (let i = 0; i < 100; i++) {
-      const rastgelePlan = rastgelePlanUret(dersler, secilenGunler, saatSayisi);
-      const rastgeleCeza = planPuanla(rastgelePlan, dersler);
-
-      if (rastgeleCeza < enDusukCeza) {
-        enIyiPlan = rastgelePlan;
-        enDusukCeza = rastgeleCeza;
-        console.log(`✅ Yeni rekor! Plan ${i + 1}: ${rastgeleCeza} ceza`);
-      }
-    }
-
-    console.log(`\n🏆 EN İYİ PLAN: ${enDusukCeza} ceza`);
-    console.log(
-      "📊 Orijinal: " +
-        orijinalCeza +
-        " | En İyi: " +
-        enDusukCeza +
-        " | İyileşme: " +
-        (orijinalCeza - enDusukCeza) +
-        " puan",
+    // ADIM 1: Popülasyon oluştur
+    const populasyon = ilkPopulasyonOlustur(
+      dersler,
+      secilenGunler,
+      saatSayisi,
+      200,
     );
+    console.log("🧬 Popülasyon oluşturuldu! Boyut:", populasyon.length);
 
-    // En iyi planı göster
-    setPlan(enIyiPlan);
+    // ADIM 2: En iyi 20'yi seç
+    const secilenler = secilenleriBul(populasyon, 20);
+
+    console.log("\n🏆 EN İYİ 20 PLAN SEÇİLDİ!");
+    console.log("📊 En iyi 5 plan:");
+    secilenler.slice(0, 5).forEach((birey, index) => {
+      console.log(`  ${index + 1}. Plan: ${birey.ceza} ceza`);
+    });
+
+    console.log("\n📊 En kötü 5 plan (seçilenlerin içinde):");
+    secilenler.slice(-5).forEach((birey, index) => {
+      console.log(`  ${index + 16}. Plan: ${birey.ceza} ceza`);
+    });
+
+    const ortalama = Math.round(
+      secilenler.reduce((sum, b) => sum + b.ceza, 0) / secilenler.length,
+    );
+    console.log(`\n✅ Seçilen 20 planın ortalama cezası: ${ortalama}`);
+
+    // Orijinal planla karşılaştır
+    const orijinalCeza = planPuanla(plan, dersler);
+    console.log(`\n🎯 ORİJİNAL PLAN: ${orijinalCeza} ceza`);
+    console.log(`📊 En iyi seçilen: ${secilenler[0].ceza} ceza`);
+    console.log(`📈 Fark: ${orijinalCeza - secilenler[0].ceza} puan`);
   };
 
   const dersSil = (id) => {

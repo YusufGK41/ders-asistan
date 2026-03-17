@@ -24,9 +24,9 @@ export function planPuanla(plan, dersler) {
     bugunDersler.forEach((ders) => {
       if (yarinDersler.includes(ders)) {
         toplamCeza += 15;
-        console.log(
+        /**console.log(
           `⚠️ ${bugun.gun} ve ${yarin.gun} günlerinde ${ders} arka arkaya! +15 ceza`,
-        );
+        ); **/
       }
     });
   }
@@ -50,9 +50,9 @@ export function planPuanla(plan, dersler) {
         sonrakiDersInfo?.zorlukSeviyesi === "zor"
       ) {
         toplamCeza += 20;
-        console.log(
+        /**console.log(
           `⚠️ ${gunPlani.gun} gününde ${simdikiDers.dersAdi} ve ${sonrakiDers.dersAdi} arka arkaya zor dersler! +20 ceza`,
-        );
+        ); **/
       }
     }
   });
@@ -72,6 +72,56 @@ export function planPuanla(plan, dersler) {
       `⚠️ Günlük yük dengesiz! En fazla: ${enFazlaSaat}h, En az: ${enAzSaat}h. Fark: ${fark}h → +${fark} ceza`,
     );*/
   }
+
+  // CEZA 4: Aynı dersin 3+ gün üst üste gelmesi
+  // Her dersin hangi günlerde olduğunu bul
+  const dersGunleri = {};
+  plan.forEach((gunPlani) => {
+    const gunukiDersler = [...new Set(gunPlani.dersler.map((d) => d.dersAdi))]; // tekrarları kaldır
+    gunukiDersler.forEach((dersAdi) => {
+      if (!dersGunleri[dersAdi]) {
+        dersGunleri[dersAdi] = [];
+      }
+      dersGunleri[dersAdi].push(gunPlani.gun);
+    });
+  });
+  // Her ders için ard arda kaç gün var kontrol et
+
+  Object.entries(dersGunleri).forEach(([dersAdi, gunler]) => {
+    if (gunler.length >= 3) {
+      //gunleri indexe cevir
+      const tumGunler = [
+        "Pazartesi",
+        "Salı",
+        "Çarşamba",
+        "Perşembe",
+        "Cuma",
+        "Cumartesi",
+        "Pazar",
+      ];
+      const gunIndexleri = gunler
+        .map((gun) => plan.findIndex((p) => p.gun === gun))
+        .sort((a, b) => a - b);
+
+      // ard arda olup olmadığını kontrol et
+      let ardArdaSayisi = 1;
+      let maxArdArda = 1;
+
+      for (let i = 1; i < gunIndexleri.length; i++) {
+        if (gunIndexleri[i] === gunIndexleri[i - 1] + 1) {
+          ardArdaSayisi++;
+          maxArdArda = Math.max(maxArdArda, ardArdaSayisi);
+        } else {
+          ardArdaSayisi = 1;
+        }
+      }
+      if (maxArdArda >= 3) {
+        toplamCeza += 50;
+        /**console.log(`🔴 ${dersAdi} ${maxArdArda} gün üst üste! +50 ceza`);
+         **/
+      }
+    }
+  });
 
   return toplamCeza;
 }
@@ -132,4 +182,33 @@ export function rastgelePlanUret(dersler, secilenGunler, saatSayisi) {
   });
 
   return plan;
+}
+
+export function ilkPopulasyonOlustur(
+  dersler,
+  secilenGunler,
+  saatSayisi,
+  populasyonBoyutu = 50,
+) {
+  const populasyon = [];
+
+  for (let i = 0; i < populasyonBoyutu; i++) {
+    const plan = rastgelePlanUret(dersler, secilenGunler, saatSayisi);
+    const ceza = planPuanla(plan, dersler);
+
+    populasyon.push({
+      plan: plan,
+      ceza: ceza,
+    });
+  }
+  return populasyon;
+}
+
+export function secilenleriBul(populasyon, secilenSayisi = 20) {
+  // 1. Ceza puanına göre sırala (küçükten büyüğe)
+  const siraliPopulasyon = [...populasyon].sort((a, b) => a.ceza - b.ceza);
+
+  // 2. En iyi secilenSayisi kadarını al
+  const secilenler = siraliPopulasyon.slice(0, secilenSayisi);
+  return secilenler;
 }

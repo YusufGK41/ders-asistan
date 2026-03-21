@@ -5,17 +5,11 @@ import { dersleriKaydet, dersleriYukle } from "./utils/storage";
 import PlanForm from "./components/PlanForm";
 import { konuSuresiHesapla } from "./utils/hesaplamalar";
 import PlanGoster from "./components/PlanGoster";
-import {
-  planPuanla,
-  rastgelePlanUret,
-  ilkPopulasyonOlustur,
-  secilenleriBul,
-} from "./utils/genetikAlgoritma";
+import { evrimiBaslat } from "./utils/genetikAlgoritma"; // <-- IMPORT GÜNCELLENDİ
 
 function App() {
   const [dersler, setDersler] = useState(dersleriYukle());
   const [plan, setPlan] = useState([]);
-
   const [aktifSekme, setAktifSekme] = useState("dersler");
 
   useEffect(() => {
@@ -23,33 +17,47 @@ function App() {
   }, [dersler]);
 
   const dersEkle = (yeniDers) => {
-    const dersVarmi = dersler.some((ders) => {
-      ders.dersAdi.toLowerCase().trim() ===
-        yeniDers.dersAdi.toLowerCase().trim();
-    });
+    const dersVarmi = dersler.some(
+      (ders) =>
+        ders.dersAdi.toLowerCase().trim() ===
+        yeniDers.dersAdi.toLowerCase().trim(),
+    );
     if (dersVarmi) {
       alert("Bu ders zaten listenizde var! Lütfen farklı bir ders ekleyin.");
-      return; // Fonksiyonu durdur, ekleme yapma
+      return;
     }
 
     const dersWithId = {
       ...yeniDers,
-      id: Date.now(), // Unique ID ekle
+      id: Date.now(),
     };
 
     setDersler([...dersler, dersWithId]);
-    console.log("Yeni ders eklendi:", dersWithId);
   };
 
-  // ARTIK gunSayisi DEĞİL, secilenGunler GELİYOR
   const planOlustur = (secilenGunler, saatSayisi) => {
+    // 0. GÜNLERİ KRONOLOJİK SIRAYA DİZ (Hangi sırayla tıklanırsa tıklansın takvim sırasına girer)
+    const haftaninGunleri = [
+      "Pazartesi",
+      "Salı",
+      "Çarşamba",
+      "Perşembe",
+      "Cuma",
+      "Cumartesi",
+      "Pazar",
+    ];
+
+    const siraliSecilenGunler = [...secilenGunler].sort(
+      (a, b) => haftaninGunleri.indexOf(a) - haftaninGunleri.indexOf(b),
+    );
+
     // 1. Planlanacak konuları filtrele
     const planlanacakDersler = dersler.map((ders) => ({
       ...ders,
       konular: ders.konular.filter((konu) => konu.bitti === false),
     }));
 
-    // 2. Sıralama (Sınav tarihine ve zorluğa göre - Aynen koruduk)
+    // 2. SIRALAMA (Sınav tarihine ve zorluğa göre kendi mantığın)
     const siraliDersler = planlanacakDersler.sort((a, b) => {
       if (a.sinavTarihi && b.sinavTarihi) {
         const tarihFarki = new Date(a.sinavTarihi) - new Date(b.sinavTarihi);
@@ -67,141 +75,71 @@ function App() {
       return zorlukSirasi[a.zorlukSeviyesi] - zorlukSirasi[b.zorlukSeviyesi];
     });
 
-    // 3. Süreleri hesapla
-    const derslerVeSureler = siraliDersler.map((ders) => {
-      const toplamSure = ders.konular.reduce((toplam, konu) => {
-        return toplam + konuSuresiHesapla(ders.zorlukSeviyesi);
-      }, 0);
-      return {
-        ...ders,
-        toplamSure: toplamSure,
-      };
+    // 3. Algoritma İçin Verileri Düzleştir
+    const islenecekKonular = [];
+    let toplamIsYuku = 0;
+
+    siraliDersler.forEach((ders) => {
+      ders.konular.forEach((konu) => {
+        const sure = konuSuresiHesapla(ders.zorlukSeviyesi);
+        toplamIsYuku += sure;
+        islenecekKonular.push({
+          dersAdi: ders.dersAdi,
+          konuAdi: konu.ad,
+          zorluk: ders.zorlukSeviyesi,
+          sure: sure,
+        });
+      });
     });
 
-    // 4. KAPASİTE KONTROLÜ (YENİ MANTIK)
-    const toplamIsYuku = derslerVeSureler.reduce((toplam, ders) => {
-      return toplam + ders.toplamSure;
-    }, 0);
+    if (islenecekKonular.length === 0) {
+      alert("Planlanacak bitmemiş konu bulunamadı!");
+      return;
+    }
 
-    // Kapasite = Seçilen günlerin adedi * Günlük Saat
-    const calismaKapasitesi = secilenGunler.length * saatSayisi;
+    // 4. KAPASİTE KONTROLÜ (Sıralı Günler ile)
+    const calismaKapasitesi = siraliSecilenGunler.length * saatSayisi;
 
-    console.log("Seçilen Günler:", secilenGunler);
-    console.log("Toplam iş yükü:", toplamIsYuku, "saat");
-    console.log("Çalışma kapasitesi:", calismaKapasitesi, "saat");
+    console.log("Seçilen Günler:", siraliSecilenGunler);
+    console.log("Toplam İş Yükü:", toplamIsYuku, "saat");
+    console.log("Çalışma Kapasitesi:", calismaKapasitesi, "saat");
 
     if (toplamIsYuku > calismaKapasitesi) {
       alert(
-        `Uyarı! ${toplamIsYuku} saat iş yükün var ama seçtiğin ${secilenGunler.length} gün için kapasiten sadece ${calismaKapasitesi} saat. Daha fazla gün seç veya konuları azalt.`,
+        `Uyarı! ${toplamIsYuku} saat iş yükün var ama seçtiğin günlerin kapasitesi ${calismaKapasitesi} saat. Lütfen gün/saat artır veya konu azalt.`,
       );
       return;
     }
 
-    // 5. GÜNLERE DAĞIT (BEYİN AMELİYATI BURADA)
-    const plan = [];
-    let gunIndex = 0;
-    let gunKalanSaat = saatSayisi;
-
-    derslerVeSureler.forEach((ders) => {
-      ders.konular.forEach((konu) => {
-        let konuKalanSaat = konuSuresiHesapla(ders.zorlukSeviyesi);
-
-        while (konuKalanSaat > 0) {
-          // Güvenlik: Eğer seçtiğimiz günleri aştıysak döngüyü kır
-          if (gunIndex >= secilenGunler.length) break;
-
-          const bugunCalisilacak = Math.min(konuKalanSaat, gunKalanSaat);
-
-          if (!plan[gunIndex]) {
-            plan[gunIndex] = {
-              // ARTIK SIRADAN GÜNLERİ DEĞİL, KULLANICININ SEÇTİĞİ GÜNLERİ ALIYORUZ!
-              gun: secilenGunler[gunIndex],
-              dersler: [],
-            };
-          }
-
-          plan[gunIndex].dersler.push({
-            dersAdi: ders.dersAdi,
-            konuAdi: konu.ad,
-            sure: bugunCalisilacak,
-          });
-
-          konuKalanSaat -= bugunCalisilacak;
-          gunKalanSaat -= bugunCalisilacak;
-
-          // Günün saati dolduysa bir sonraki güne geç
-          if (gunKalanSaat === 0) {
-            gunIndex++;
-            gunKalanSaat = saatSayisi;
-          }
-        }
-      });
-    });
-
-    setPlan(plan);
-
-    // ===== GENETİK ALGORİTMA TESTİ =====
-
-    // ADIM 1: Popülasyon oluştur
-    const populasyon = ilkPopulasyonOlustur(
-      dersler,
-      secilenGunler,
+    // 5. GENETİK ALGORİTMAYI ÇALIŞTIR
+    console.log("🧬 Genetik Algoritma Evrimi Başlıyor...");
+    const enIyiPlan = evrimiBaslat(
+      islenecekKonular,
+      siraliSecilenGunler,
       saatSayisi,
-      200,
+      50,
     );
-    console.log("🧬 Popülasyon oluşturuldu! Boyut:", populasyon.length);
 
-    // ADIM 2: En iyi 20'yi seç
-    const secilenler = secilenleriBul(populasyon, 20);
-
-    console.log("\n🏆 EN İYİ 20 PLAN SEÇİLDİ!");
-    console.log("📊 En iyi 5 plan:");
-    secilenler.slice(0, 5).forEach((birey, index) => {
-      console.log(`  ${index + 1}. Plan: ${birey.ceza} ceza`);
-    });
-
-    console.log("\n📊 En kötü 5 plan (seçilenlerin içinde):");
-    secilenler.slice(-5).forEach((birey, index) => {
-      console.log(`  ${index + 16}. Plan: ${birey.ceza} ceza`);
-    });
-
-    const ortalama = Math.round(
-      secilenler.reduce((sum, b) => sum + b.ceza, 0) / secilenler.length,
-    );
-    console.log(`\n✅ Seçilen 20 planın ortalama cezası: ${ortalama}`);
-
-    // Orijinal planla karşılaştır
-    const orijinalCeza = planPuanla(plan, dersler);
-    console.log(`\n🎯 ORİJİNAL PLAN: ${orijinalCeza} ceza`);
-    console.log(`📊 En iyi seçilen: ${secilenler[0].ceza} ceza`);
-    console.log(`📈 Fark: ${orijinalCeza - secilenler[0].ceza} puan`);
+    // Ekrana yansıt
+    setPlan(enIyiPlan);
   };
 
   const dersSil = (id) => {
     const yeniDersler = dersler.filter((ders) => ders.id !== id);
     setDersler(yeniDersler);
-    console.log("Ders silindi, ID:", id);
   };
 
   const konuDurumDegistir = (hedefDersId, hedefKonuId) => {
-    console.log(
-      "Konu durum değiştiriliyor - Ders ID:",
-      hedefDersId,
-      "Konu ID:",
-      hedefKonuId,
-    );
     const yeniDersler = dersler.map((ders) => {
       if (ders.id !== hedefDersId) {
         return ders;
       }
       return {
         ...ders,
-
         konular: ders.konular.map((konu) => {
           if (konu.id === hedefKonuId) {
             return { ...konu, bitti: !konu.bitti };
           }
-
           return konu;
         }),
       };
@@ -212,7 +150,6 @@ function App() {
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 lg:p-12">
       <div className="max-w-7xl mx-auto">
-        {/* Üst Başlık Bölümü */}
         <header className="mb-8 text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-2">
             📚 Ders <span className="text-blue-600">Asistanım</span>
@@ -222,7 +159,6 @@ function App() {
           </p>
         </header>
 
-        {/* YENİ: SEKMELER (TABS) BÖLÜMÜ */}
         <div className="flex justify-center gap-4 mb-8 border-b border-slate-200 pb-2">
           <button
             onClick={() => setAktifSekme("dersler")}
@@ -247,9 +183,6 @@ function App() {
           </button>
         </div>
 
-        {/* İÇERİK BÖLÜMÜ - Hangi sekme aktifse o görünür */}
-
-        {/* SEKME 1: DERSLER */}
         {aktifSekme === "dersler" && (
           <main className="flex flex-col lg:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500">
             <aside className="w-full lg:w-[400px] lg:sticky lg:top-8">
@@ -273,7 +206,6 @@ function App() {
           </main>
         )}
 
-        {/* SEKME 2: PLANLAMA */}
         {aktifSekme === "plan" && (
           <main className="flex flex-col lg:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500">
             <aside className="w-full lg:w-[350px] lg:sticky lg:top-8">

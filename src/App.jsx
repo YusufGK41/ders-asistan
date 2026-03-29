@@ -36,7 +36,7 @@ function App() {
   };
 
   const planOlustur = (secilenGunler, saatSayisi) => {
-    // 0. GÜNLERİ KRONOLOJİK SIRAYA DİZ (Hangi sırayla tıklanırsa tıklansın takvim sırasına girer)
+    // 0. GÜNLERİ KRONOLOJİK SIRAYA DİZ
     const haftaninGunleri = [
       "Pazartesi",
       "Salı",
@@ -46,58 +46,31 @@ function App() {
       "Cumartesi",
       "Pazar",
     ];
-
     const siraliSecilenGunler = [...secilenGunler].sort(
       (a, b) => haftaninGunleri.indexOf(a) - haftaninGunleri.indexOf(b),
     );
 
-    // 1. Planlanacak konuları filtrele
-    const planlanacakDersler = dersler.map((ders) => ({
-      ...ders,
-      konular: ders.konular.filter((konu) => konu.bitti === false),
-    }));
+    // 1. SADECE BİTMEYEN KONULARI FİLTRELE (Düzleştirme yapmıyoruz, ham veriyi koruyoruz!)
+    const planlanacakDersler = dersler
+      .map((ders) => ({
+        ...ders,
+        konular: ders.konular.filter((konu) => konu.bitti === false),
+      }))
+      .filter((ders) => ders.konular.length > 0); // İçinde hiç konu kalmayan dersleri çöpe at
 
-    // 2. SIRALAMA (Sınav tarihine ve zorluğa göre kendi mantığın)
-    const siraliDersler = planlanacakDersler.sort((a, b) => {
-      if (a.sinavTarihi && b.sinavTarihi) {
-        const tarihFarki = new Date(a.sinavTarihi) - new Date(b.sinavTarihi);
-        if (tarihFarki === 0) {
-          const zorlukSirasi = { zor: 1, orta: 2, kolay: 3 };
-          return (
-            zorlukSirasi[a.zorlukSeviyesi] - zorlukSirasi[b.zorlukSeviyesi]
-          );
-        }
-        return tarihFarki;
-      }
-      if (a.sinavTarihi && !b.sinavTarihi) return -1;
-      if (!a.sinavTarihi && b.sinavTarihi) return 1;
-      const zorlukSirasi = { zor: 1, orta: 2, kolay: 3 };
-      return zorlukSirasi[a.zorlukSeviyesi] - zorlukSirasi[b.zorlukSeviyesi];
-    });
-
-    // 3. Algoritma İçin Verileri Düzleştir
-    const islenecekKonular = [];
-    let toplamIsYuku = 0;
-
-    siraliDersler.forEach((ders) => {
-      ders.konular.forEach((konu) => {
-        const sure = konuSuresiHesapla(ders.zorlukSeviyesi);
-        toplamIsYuku += sure;
-        islenecekKonular.push({
-          dersAdi: ders.dersAdi,
-          konuAdi: konu.ad,
-          zorluk: ders.zorlukSeviyesi,
-          sure: sure,
-        });
-      });
-    });
-
-    if (islenecekKonular.length === 0) {
+    if (planlanacakDersler.length === 0) {
       alert("Planlanacak bitmemiş konu bulunamadı!");
       return;
     }
 
-    // 4. KAPASİTE KONTROLÜ (Sıralı Günler ile)
+    // 2. KAPASİTE KONTROLÜ İÇİN TOPLAM YÜKÜ HESAPLA
+    let toplamIsYuku = 0;
+    planlanacakDersler.forEach((ders) => {
+      ders.konular.forEach((konu) => {
+        toplamIsYuku += konuSuresiHesapla(ders.zorlukSeviyesi);
+      });
+    });
+
     const calismaKapasitesi = siraliSecilenGunler.length * saatSayisi;
 
     console.log("Seçilen Günler:", siraliSecilenGunler);
@@ -106,21 +79,23 @@ function App() {
 
     if (toplamIsYuku > calismaKapasitesi) {
       alert(
-        `Uyarı! ${toplamIsYuku} saat iş yükün var ama seçtiğin günlerin kapasitesi ${calismaKapasitesi} saat. Lütfen gün/saat artır veya konu azalt.`,
+        `Uyarı! ${toplamIsYuku} saat iş yükün var ama kapasiten ${calismaKapasitesi} saat. Lütfen gün/saat artır veya konu azalt.`,
       );
       return;
     }
 
-    // 5. GENETİK ALGORİTMAYI ÇALIŞTIR
+    // 3. GENETİK ALGORİTMAYI ÇALIŞTIR (Ham 'planlanacakDersler' dizisini yolluyoruz)
     console.log("🧬 Genetik Algoritma Evrimi Başlıyor...");
+
+    // Parametreler: (dersler, secilenGunler, saatSayisi, populasyonBoyutu, jenerasyonSayisi)
     const enIyiPlan = evrimiBaslat(
-      islenecekKonular,
+      planlanacakDersler,
       siraliSecilenGunler,
       saatSayisi,
-      50,
+      100, // Popülasyonu 100 yaptık
+      50, // 50 Nesil
     );
 
-    // Ekrana yansıt
     setPlan(enIyiPlan);
   };
 

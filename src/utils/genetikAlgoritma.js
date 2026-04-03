@@ -179,8 +179,7 @@ export function planPuanla(plan, dersler) {
     });
   }
 
-  // ============================================
-  // CEZA 5: GÜNLÜK YÜK DENGESİZLİĞİ (fark × 15)
+  // CEZA 5: GÜNLÜK YÜK DENGESİZLİĞİ (ÜSTEL CEZA - KATLANARAK ARTAR)
   // ============================================
   if (plan.length > 0) {
     const gunlukSaatler = plan.map((g) =>
@@ -188,8 +187,12 @@ export function planPuanla(plan, dersler) {
     );
 
     const fark = Math.max(...gunlukSaatler) - Math.min(...gunlukSaatler);
-    if (fark > 0) {
-      toplamCeza += fark * 15;
+
+    // 1 saatlik fark insani bir durumdur (küsürat kalabilir), ama 2 saat ve üstü fark varsa acımasızca cezalandır.
+    // Fark arttıkça ceza karesi alınarak (üstel) artar.
+    // Örn: Fark 2 ise 4*100=400 ceza. Fark 4 ise 16*100=1600 ceza!
+    if (fark > 1) {
+      toplamCeza += Math.pow(fark, 2) * 100;
     }
   }
 
@@ -228,6 +231,51 @@ export function planPuanla(plan, dersler) {
         toplamCeza += asimMiktari * 300; // Aştığı her saat için 300 ağır ceza!
       }
     });
+  });
+
+  // ============================================
+  // CEZA 8: SEÇİLEN GÜNÜN TAMAMEN BOŞ KALMASI (YENİ KURAL)
+  // ============================================
+  plan.forEach((gunPlani) => {
+    const gunlukToplamSure = gunPlani.dersler.reduce(
+      (sum, d) => sum + d.sure,
+      0,
+    );
+
+    // Kullanıcı bu günü seçtiyse demek ki o gün çalışmak İSTİYOR. O günü boş geçemezsin!
+    if (gunlukToplamSure === 0) {
+      toplamCeza += 800;
+    }
+  });
+
+  // ============================================
+  // CEZA 9: ODAK DAĞILMASI (ÇOK FAZLA FARKLI DERS)
+  // ============================================
+  plan.forEach((gunPlani) => {
+    // O günkü benzersiz (farklı) derslerin sayısını bul (Örn: Matematik, Fizik, Kimya = 3)
+    const benzersizDersler = [
+      ...new Set(gunPlani.dersler.map((d) => d.dersAdi)),
+    ];
+
+    // Eğer bir günde 2'den fazla FARKLI ders varsa ağır ceza ver!
+    if (benzersizDersler.length > 2) {
+      // 3 ders varsa 1 * 400 = 400 ceza. 4 ders varsa 2 * 400 = 800 ceza.
+      toplamCeza += (benzersizDersler.length - 2) * 400;
+    }
+  });
+
+  // ============================================
+  // CEZA 10: ISINMA TURU (GÜNE ZOR DERSLE BAŞLAMA)
+  // ============================================
+  plan.forEach((gunPlani) => {
+    // Eğer o gün hiç ders yoksa veya boşsa hata vermemesi için kontrol
+    if (gunPlani.dersler && gunPlani.dersler.length > 0) {
+      const ilkDers = gunPlani.dersler[0]; // Günün ilk dersini al
+
+      if (ilkDers.zorluk === "zor") {
+        toplamCeza += 150; // Masaya oturur oturmaz zor derse başlamanın cezası
+      }
+    }
   });
 
   Object.values(dersGunleri).forEach((gunIndexleri) => {

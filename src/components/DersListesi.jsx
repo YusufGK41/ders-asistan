@@ -1,6 +1,6 @@
 import React from "react";
 
-function DersListesi({ dersler, onDersSil, onKonuToggle }) {
+function DersListesi({ dersler, onDersDuzenle, onDersSil, onKonuToggle }) {
   if (dersler.length === 0) {
     return (
       <p className="text-center text-gray-500 mt-8 bg-white p-4 rounded shadow-sm">
@@ -88,6 +88,17 @@ function DersListesi({ dersler, onDersSil, onKonuToggle }) {
             </div>
           </div>
 
+          <button 
+          onClick={() => onDersDuzenle(ders.id)}
+          className="ml-2 bg-blue-50 text-blue-500 p-2 rounded-full hover:bg-blue-500 hover:text-white transition-colors border border-blue-100"
+          title="Dersi Düzenle"
+          >
+            <svg
+            className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+
           <button
             onClick={() => onDersSil(ders.id)}
             className="ml-4 bg-red-50 text-red-500 p-2 rounded-full hover:bg-red-500 hover:text-white transition-colors border border-red-100"
@@ -108,6 +119,7 @@ function DersListesi({ dersler, onDersSil, onKonuToggle }) {
               />
             </svg>
           </button>
+          
         </div>
       ))}
     </div>

@@ -1,12 +1,32 @@
 import React from "react";
 
-function DersForm({ onDersEkle }) {
+function DersForm({ onDersEkle, duzenlenecekDers, onDersGuncelle }) {
   const [formData, setFormData] = React.useState({
     dersAdi: "",
     konular: [],
     zorlukSeviyesi: "kolay",
     sinavTarihi: "",
   });
+
+  React.useEffect(() => {
+  if (duzenlenecekDers) {
+    // Düzenleme modu - form u doldur
+    setFormData({
+      dersAdi: duzenlenecekDers.dersAdi,
+      konular: duzenlenecekDers.konular || [],
+      zorlukSeviyesi: duzenlenecekDers.zorlukSeviyesi,
+      sinavTarihi: duzenlenecekDers.sinavTarihi || "",
+    });
+  } else {
+    // YEni ders ekleme modu - form u temizle
+    setFormData({
+      dersAdi: "",
+      konular: [],
+      zorlukSeviyesi: "kolay",
+      sinavTarihi: "",
+    });
+  }
+}, [duzenlenecekDers]);
 
   const [konuInput, setKonuInput] = React.useState("");
 
@@ -66,11 +86,20 @@ function DersForm({ onDersEkle }) {
       return;
     }
 
-    // 4. Güncellenmiş konularla birlikte veriyi üst bileşene gönder
-    onDersEkle({
+    // 4. Düzenleme moduna göre doğru fonksiyonu çağır
+    const gonderilecekVeri = {
       ...formData,
       konular: guncelKonular,
-    });
+    };
+
+    if (duzenlenecekDers) {
+      // Düzenleme modu - ID yi koru
+      gonderilecekVeri.id = duzenlenecekDers.id;
+      onDersGuncelle(gonderilecekVeri);
+    } else {
+      // Yeni ders ekleme modu
+      onDersEkle(gonderilecekVeri);
+    }
 
     // 5. Formu ve inputu tamamen temizle
     setFormData({
@@ -83,9 +112,19 @@ function DersForm({ onDersEkle }) {
   };
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 max-w-md w-full">
+    <div className={`bg-white p-8 rounded-2xl shadow-xl border-2 max-w-md w-full transition-all duration-300 ${
+  duzenlenecekDers 
+    ? "border-orange-500 bg-orange-50" 
+    : "border-gray-100"
+}`}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Yeni Ders Ekle</h2>
+        <h2 className={`text-2xl font-bold mb-6 ${
+  duzenlenecekDers 
+    ? "text-orange-600" 
+    : "text-blue-600"
+}`}>
+  {duzenlenecekDers ? "📝 Ders Güncelle" : "➕ Ders Ekle"}
+</h2>
         <p className="text-gray-500 text-sm">Çalışma planını detaylandır.</p>
       </div>
 
@@ -184,11 +223,15 @@ function DersForm({ onDersEkle }) {
         </div>
 
         <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] mt-4"
-        >
-          Ders Ekle
-        </button>
+  type="submit"
+  className={`w-full px-4 py-4 rounded-xl font-bold shadow-lg transition-all active:scale-[0.98] mt-4 ${
+    duzenlenecekDers
+      ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-orange-200"
+      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-200"
+  }`} /* <-- İŞTE EKSİK OLAN KISIM BURASI (Ters tırnak ve süslü parantez) */
+>
+  {duzenlenecekDers ? "🔄 Ders Güncelle" : "➕ Ders Ekle"}
+</button>
       </form>
     </div>
   );

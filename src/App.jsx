@@ -11,6 +11,7 @@ function App() {
   const [dersler, setDersler] = useState(dersleriYukle());
   const [plan, setPlan] = useState([]);
   const [aktifSekme, setAktifSekme] = useState("dersler");
+  const [duzenlenecekDers, setDuzenlenecekDers] = useState(null);
 
   useEffect(() => {
     dersleriKaydet(dersler);
@@ -99,6 +100,24 @@ function App() {
     setPlan(enIyiPlan);
   };
 
+  const dersDuzenlemeModunaGec = (dersId) => {
+    const ders = dersler.find(d => d.id === dersId);
+    if (ders) {
+      setDuzenlenecekDers(ders);
+    }
+  };
+
+  const dersGuncelle = (guncellenmisDers) => {
+  const yeniDersler = dersler.map(ders => 
+    ders.id === guncellenmisDers.id 
+      ? { ...guncellenmisDers}
+      : ders
+  );
+  setDersler(yeniDersler);
+  setDuzenlenecekDers(null);
+};
+
+
   const dersSil = (id) => {
     const yeniDersler = dersler.filter((ders) => ders.id !== id);
     setDersler(yeniDersler);
@@ -161,7 +180,12 @@ function App() {
         {aktifSekme === "dersler" && (
           <main className="flex flex-col lg:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500">
             <aside className="w-full lg:w-[400px] lg:sticky lg:top-8">
-              <DersForm onDersEkle={dersEkle} />
+              <DersForm 
+              onDersEkle={dersEkle}
+              duzenlenecekDers={duzenlenecekDers}
+              onDersGuncelle={dersGuncelle}
+              />
+              
             </aside>
             <section className="flex-1 w-full">
               <div className="flex items-center justify-between mb-6 border-b border-slate-200 pb-4">
@@ -174,12 +198,15 @@ function App() {
               </div>
               <DersListesi
                 dersler={dersler}
+                onDersDuzenle={dersDuzenlemeModunaGec}
                 onDersSil={dersSil}
                 onKonuToggle={konuDurumDegistir}
               />
             </section>
           </main>
         )}
+
+        
 
         {aktifSekme === "plan" && (
           <main className="flex flex-col lg:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500">

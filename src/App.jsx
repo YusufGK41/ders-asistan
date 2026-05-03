@@ -5,7 +5,10 @@ import { dersleriKaydet, dersleriYukle } from "./utils/storage";
 import PlanForm from "./components/PlanForm";
 import { konuSuresiHesapla } from "./utils/hesaplamalar";
 import PlanGoster from "./components/PlanGoster";
-import { evrimiBaslat } from "./utils/genetikAlgoritma"; // <-- IMPORT GÜNCELLENDİ
+import { evrimiBaslat } from "./utils/genetikAlgoritma"; // <-- IMPORT GÜNCELLENDi
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 function App() {
   const [dersler, setDersler] = useState(dersleriYukle());
@@ -219,6 +222,11 @@ function App() {
           </main>
         )}
       </div>
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        theme="light"
+      />
     </div>
   );
 }

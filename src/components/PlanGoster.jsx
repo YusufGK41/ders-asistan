@@ -1,6 +1,19 @@
 import React from "react";
+import { planiPDFIndir } from '../utils/pdfGenerator';
 
 function PlanGoster({ plan }) {
+
+  const handlePDFIndir = () => {
+      // plan ayarları olustur (varsayılan değer)
+      const ayarlar = {
+        gunSayisi: 7,
+        gunlukSaat: 6,
+        baslangicSaati: "09:00"
+      };
+
+      planiPDFIndir(plan, null, 'calisma-plani.pdf');
+    };
+
   if (!plan || plan.length === 0) {
     return;
   }
@@ -8,6 +21,12 @@ function PlanGoster({ plan }) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mt-8">
       <h2 className="text-2xl font-bold mb-4">📅 Haftalık Çalışma Planı</h2>
+      <button 
+      onClick={handlePDFIndir}
+      className="mb-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+      >
+        📄 PDF İndir
+      </button>
 
       {plan.map((gunPlani, index) => (
         <div key={index} className="mb-6">

@@ -1,4 +1,5 @@
 import React from "react";
+import { toast } from "react-toastify";
 
 function DersForm({ onDersEkle, duzenlenecekDers, onDersGuncelle }) {
   const [formData, setFormData] = React.useState({
@@ -32,7 +33,7 @@ function DersForm({ onDersEkle, duzenlenecekDers, onDersGuncelle }) {
 
   const konuEkle = () => {
     if (konuInput.trim() === "") {
-      alert("Konu adı boş olamaz!");
+      toast.error("Konu adı boş olamaz!");
       return;
     }
 
@@ -46,7 +47,7 @@ function DersForm({ onDersEkle, duzenlenecekDers, onDersGuncelle }) {
       ...formData,
       konular: [...formData.konular, yeniKonu],
     });
-    setKonuInput("");
+    setKonuInput(""); // Input'u temizle
   };
 
   const konuSil = (id) => {
@@ -72,17 +73,17 @@ function DersForm({ onDersEkle, duzenlenecekDers, onDersGuncelle }) {
 
     // 3. Validasyonlar (Artık guncelKonular üzerinden yapıyoruz)
     if (formData.dersAdi.trim() === "") {
-      alert("Ders adı boş olamaz!");
+      toast.error("Ders adı boş olamaz!");
       return;
     }
 
     if (guncelKonular.length === 0) {
-      alert("En az bir konu eklemelisiniz!");
+      toast.error("En az bir konu eklemelisiniz!");
       return;
     }
 
     if (formData.sinavTarihi && isNaN(Date.parse(formData.sinavTarihi))) {
-      alert("Geçersiz sınav tarihi!");
+      toast.error("Geçersiz sınav tarihi!");
       return;
     }
 
@@ -96,9 +97,11 @@ function DersForm({ onDersEkle, duzenlenecekDers, onDersGuncelle }) {
       // Düzenleme modu - ID yi koru
       gonderilecekVeri.id = duzenlenecekDers.id;
       onDersGuncelle(gonderilecekVeri);
+      toast.success("Ders başarıyla güncellendi! 🎉");
     } else {
       // Yeni ders ekleme modu
       onDersEkle(gonderilecekVeri);
+      toast.success("Ders başarıyla eklendi! 🎉");
     }
 
     // 5. Formu ve inputu tamamen temizle
@@ -228,7 +231,7 @@ function DersForm({ onDersEkle, duzenlenecekDers, onDersGuncelle }) {
     duzenlenecekDers
       ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-orange-200"
       : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-200"
-  }`} /* <-- İŞTE EKSİK OLAN KISIM BURASI (Ters tırnak ve süslü parantez) */
+  }`} 
 >
   {duzenlenecekDers ? "🔄 Ders Güncelle" : "➕ Ders Ekle"}
 </button>

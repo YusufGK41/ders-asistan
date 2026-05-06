@@ -5,12 +5,16 @@ import { dersleriKaydet, dersleriYukle } from "./utils/storage";
 import PlanForm from "./components/PlanForm";
 import { konuSuresiHesapla } from "./utils/hesaplamalar";
 import PlanGoster from "./components/PlanGoster";
-import { evrimiBaslat } from "./utils/genetikAlgoritma"; // <-- IMPORT GÜNCELLENDi
+import { evrimiBaslat } from "./utils/genetikAlgoritma"; 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Login from './components/Login';
 
 
-function App() {
+function AppContent() {
+  // Eğer kullanıcı giriş yapmamışsa
+  const { user, logout } = useAuth();
   const [dersler, setDersler] = useState(dersleriYukle());
   const [plan, setPlan] = useState([]);
   const [aktifSekme, setAktifSekme] = useState("dersler");
@@ -19,6 +23,8 @@ function App() {
   useEffect(() => {
     dersleriKaydet(dersler);
   }, [dersler]);
+
+ 
 
   const dersEkle = (yeniDers) => {
     const dersVarmi = dersler.some(
@@ -143,17 +149,31 @@ function App() {
     });
     setDersler(yeniDersler);
   };
-
+  
+  if (!user) {
+    return <Login />;
+  }
+  
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 lg:p-12">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-2">
-            📚 Ders <span className="text-blue-600">Asistanım</span>
-          </h1>
-          <p className="text-slate-500 font-medium italic">
-            MVP-1: Kişisel Çalışma Planlayıcı
-          </p>
+        <header className="mb-8 flex justify-between items-center border-b border-slate-200 pb-4">
+          <div className="text-left">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-1">
+              📚 Ders <span className="text-blue-600">Asistanım</span>
+            </h1>
+            <p className="text-slate-500 font-medium italic">
+              Hoş geldin, {user.user_metadata?.name || user.email}! 👋
+            </p>
+          </div>
+          
+          {/* İŞTE ÇIKIŞ YAP BUTONUMUZ */}
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-4 py-2 rounded-lg font-bold transition-colors duration-300 shadow-sm"
+          >
+            🚪 Çıkış Yap
+          </button>
         </header>
 
         <div className="flex justify-center gap-4 mb-8 border-b border-slate-200 pb-2">
@@ -228,6 +248,14 @@ function App() {
         theme="light"
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

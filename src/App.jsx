@@ -1,51 +1,73 @@
 import { useState, useEffect } from "react";
 import DersForm from "./components/DersForm";
 import DersListesi from "./components/DersListesi";
-import { dersleriKaydet, dersleriYukle } from "./utils/storage";
 import PlanForm from "./components/PlanForm";
 import { konuSuresiHesapla } from "./utils/hesaplamalar";
 import PlanGoster from "./components/PlanGoster";
 import { evrimiBaslat } from "./utils/genetikAlgoritma"; 
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
-
+import * as supabaseData from "./utils/supabaseData";
 
 function AppContent() {
   // Eğer kullanıcı giriş yapmamışsa
   const { user, logout } = useAuth();
-  const [dersler, setDersler] = useState(dersleriYukle());
+  const [dersler, setDersler] = useState([]);
   const [plan, setPlan] = useState([]);
   const [aktifSekme, setAktifSekme] = useState("dersler");
   const [duzenlenecekDers, setDuzenlenecekDers] = useState(null);
 
   useEffect(() => {
-    dersleriKaydet(dersler);
-  }, [dersler]);
+    if (user) {
+      // 1. Dersleri getir
+      supabaseData.dersleriGetir(user.id)
+        .then((data) => setDersler(data))
+        .catch(console.error);
+
+      // 2. YENİ EKLENEN KISIM: Varsa Supabase'den kayıtlı planı getir
+      supabaseData.planiGetir(user.id)
+        .then((kayitliPlan) => {
+          if (kayitliPlan) {
+            setPlan(kayitliPlan); // Planı state'e at ki ekranda görünsün
+          }
+        })
+        .catch(console.error);
+    }
+  }, [user]); //
 
  
 
-  const dersEkle = (yeniDers) => {
+  const dersEkle = async (yeniDers) => {
+    // BURAYI GÜNCELLEDİK: ders.dersAdi yerine ders.ders_adi yaptık
     const dersVarmi = dersler.some(
       (ders) =>
-        ders.dersAdi.toLowerCase().trim() ===
+        ders.ders_adi.toLowerCase().trim() ===
         yeniDers.dersAdi.toLowerCase().trim(),
     );
+
     if (dersVarmi) {
-      alert("Bu ders zaten listenizde var! Lütfen farklı bir ders ekleyin.");
+      toast.error("Bu ders zaten listenizde var!");
       return;
     }
+    
+    try {
+      // supabase ekle
+      await supabaseData.dersEkle(user.id, yeniDers);
 
-    const dersWithId = {
-      ...yeniDers,
-      id: Date.now(),
-    };
-
-    setDersler([...dersler, dersWithId]);
+      // state güncelle
+      const yeniDersler = await supabaseData.dersleriGetir(user.id);
+      setDersler(yeniDersler);
+      
+      toast.success("Ders başarıyla eklendi! 🎉");
+    } catch (error) {
+      toast.error("Ders eklenirken hata oluştu!");
+      console.error(error);
+    }
   };
 
-  const planOlustur = (secilenGunler, saatSayisi) => {
+  const planOlustur = async (secilenGunler, saatSayisi) => {
     // 0. GÜNLERİ KRONOLOJİK SIRAYA DİZ
     const haftaninGunleri = [
       "Pazartesi",
@@ -64,10 +86,11 @@ function AppContent() {
     const planlanacakDersler = dersler
       .map((ders) => ({
         ...ders,
+        dersAdi: ders.ders_adi, // Supabase'den geleni GA'nın anlayacağı şekle çevir
+        zorlukSeviyesi: ders.zorluk_seviyesi, // Supabase'den geleni GA'nın anlayacağı şekle çevir
         konular: ders.konular.filter((konu) => konu.bitti === false),
       }))
-      .filter((ders) => ders.konular.length > 0); // İçinde hiç konu kalmayan dersleri çöpe at
-
+      .filter((ders) => ders.konular.length > 0);
     if (planlanacakDersler.length === 0) {
       alert("Planlanacak bitmemiş konu bulunamadı!");
       return;
@@ -107,29 +130,53 @@ function AppContent() {
     );
 
     setPlan(enIyiPlan);
-  };
 
-  const dersDuzenlemeModunaGec = (dersId) => {
-    const ders = dersler.find(d => d.id === dersId);
-    if (ders) {
-      setDuzenlenecekDers(ders);
+    try {
+      // user.id'yi, uygulamanın state'inde nerede tutuyorsan ona göre yaz. 
+      // (Büyük ihtimalle auth'tan gelen 'user.id' veya benzeridir)
+      await supabaseData.planiKaydet(user.id, enIyiPlan);
+      toast.success("Yapay zeka planını oluşturdu ve veritabanına kaydetti! 🚀");
+    } catch (error) {
+      toast.error("Plan oluşturuldu ancak kaydedilirken hata oluştu.");
+      console.error(error);
     }
   };
 
-  const dersGuncelle = (guncellenmisDers) => {
-  const yeniDersler = dersler.map(ders => 
-    ders.id === guncellenmisDers.id 
-      ? { ...guncellenmisDers}
-      : ders
-  );
-  setDersler(yeniDersler);
-  setDuzenlenecekDers(null);
-};
+  const dersDuzenlemeModunaGec = (ders) => {
+    setDuzenlenecekDers(ders);
+    // DersForm'a veriyi gönderiyoruz - aynı mantık
+  };
+
+  const dersGuncelle = async (guncelDers) => {
+    try {
+      await supabaseData.dersGuncelle(user.id, guncelDers);
+
+      // state i güncelle
+      const yeniDersler = await supabaseData.dersleriGetir(user.id);
+      setDersler(yeniDersler);
+
+      toast.success("Ders başarıyla güncellendi! 🎉");
+      setDuzenlenecekDers(null);
+    } catch (error) {
+      toast.error("Ders güncellenirken hata oluştu!");
+      console.error(error);
+    }
+  };
 
 
-  const dersSil = (id) => {
-    const yeniDersler = dersler.filter((ders) => ders.id !== id);
+  const dersSil = async (dersId) => {
+  try {
+    await supabaseData.dersSil(user.id, dersId);
+    
+    // State'i güncelle
+    const yeniDersler = await supabaseData.dersleriGetir(user.id);
     setDersler(yeniDersler);
+    
+    toast.success("Ders başarıyla silindi! 🗑️");
+    } catch (error) {
+      toast.error("Ders silinirken hata oluştu!");
+      console.error(error);
+    }
   };
 
   const konuDurumDegistir = (hedefDersId, hedefKonuId) => {

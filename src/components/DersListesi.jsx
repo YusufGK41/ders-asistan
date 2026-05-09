@@ -19,18 +19,21 @@ function DersListesi({ dersler, onDersDuzenle, onDersSil, onKonuToggle }) {
           <div className="flex-grow">
             <div className="flex items-center gap-3 mb-1">
               <h2 className="text-xl font-bold text-gray-800">
-                {ders.dersAdi}
+                {/* GÜNCELLENDİ: dersAdi yerine ders_adi */}
+                {ders.ders_adi}
               </h2>
               <span
                 className={`text-xs px-2 py-1 rounded-full font-semibold uppercase ${
-                  ders.zorlukSeviyesi === "zor"
+                  /* GÜNCELLENDİ: zorlukSeviyesi yerine zorluk_seviyesi */
+                  ders.zorluk_seviyesi === "zor"
                     ? "bg-red-100 text-red-600"
-                    : ders.zorlukSeviyesi === "orta"
+                    : ders.zorluk_seviyesi === "orta"
                       ? "bg-yellow-100 text-yellow-600"
                       : "bg-green-100 text-green-600"
                 }`}
               >
-                {ders.zorlukSeviyesi}
+                {/* GÜNCELLENDİ */}
+                {ders.zorluk_seviyesi}
               </span>
             </div>
 
@@ -39,8 +42,9 @@ function DersListesi({ dersler, onDersDuzenle, onDersSil, onKonuToggle }) {
               <span className="mr-1">📅</span>
               <span className="font-medium">Sınav Tarihi:</span>
               <span className="ml-1 text-blue-600">
-                {ders.sinavTarihi
-                  ? new Date(ders.sinavTarihi).toLocaleDateString("tr-TR")
+                {/* GÜNCELLENDİ: sinavTarihi yerine sinav_tarihi */}
+                {ders.sinav_tarihi
+                  ? new Date(ders.sinav_tarihi).toLocaleDateString("tr-TR")
                   : "Belirtilmedi"}
               </span>
             </div>
@@ -51,6 +55,7 @@ function DersListesi({ dersler, onDersDuzenle, onDersSil, onKonuToggle }) {
                 Çalışılacak Konular:
               </h4>
               <ul className="space-y-1">
+                {/* Konular JSONB olarak tutulduğu için bu kısım aynı kalıyor */}
                 {ders.konular && ders.konular.length > 0 ? (
                   ders.konular.map((konu) => (
                     <li
@@ -89,7 +94,7 @@ function DersListesi({ dersler, onDersDuzenle, onDersSil, onKonuToggle }) {
           </div>
 
           <button 
-          onClick={() => onDersDuzenle(ders.id)}
+          onClick={() => onDersDuzenle(ders)}
           className="ml-2 bg-blue-50 text-blue-500 p-2 rounded-full hover:bg-blue-500 hover:text-white transition-colors border border-blue-100"
           title="Dersi Düzenle"
           >

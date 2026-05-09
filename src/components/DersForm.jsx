@@ -10,24 +10,24 @@ function DersForm({ onDersEkle, duzenlenecekDers, onDersGuncelle }) {
   });
 
   React.useEffect(() => {
-  if (duzenlenecekDers) {
-    // Düzenleme modu - form u doldur
-    setFormData({
-      dersAdi: duzenlenecekDers.dersAdi,
-      konular: duzenlenecekDers.konular || [],
-      zorlukSeviyesi: duzenlenecekDers.zorlukSeviyesi,
-      sinavTarihi: duzenlenecekDers.sinavTarihi || "",
-    });
-  } else {
-    // YEni ders ekleme modu - form u temizle
-    setFormData({
-      dersAdi: "",
-      konular: [],
-      zorlukSeviyesi: "kolay",
-      sinavTarihi: "",
-    });
-  }
-}, [duzenlenecekDers]);
+    if (duzenlenecekDers) {
+      // Düzenleme modu - formu Supabase'den gelen verilerle doldur
+      setFormData({
+        dersAdi: duzenlenecekDers.ders_adi || "",                  // GÜNCELLENDİ
+        konular: duzenlenecekDers.konular || [],
+        zorlukSeviyesi: duzenlenecekDers.zorluk_seviyesi || "kolay", // GÜNCELLENDİ
+        sinavTarihi: duzenlenecekDers.sinav_tarihi || "",            // GÜNCELLENDİ
+      });
+    } else {
+      // Yeni ders ekleme modu - formu temizle
+      setFormData({
+        dersAdi: "",
+        konular: [],
+        zorlukSeviyesi: "kolay",
+        sinavTarihi: "",
+      });
+    }
+  }, [duzenlenecekDers]);
 
   const [konuInput, setKonuInput] = React.useState("");
 
@@ -97,11 +97,10 @@ function DersForm({ onDersEkle, duzenlenecekDers, onDersGuncelle }) {
       // Düzenleme modu - ID yi koru
       gonderilecekVeri.id = duzenlenecekDers.id;
       onDersGuncelle(gonderilecekVeri);
-      toast.success("Ders başarıyla güncellendi! 🎉");
+      // Not: App.jsx'te de toast.success varsa, buradakini silebilirsin ki iki kere mesaj çıkmasın.
     } else {
       // Yeni ders ekleme modu
       onDersEkle(gonderilecekVeri);
-      toast.success("Ders başarıyla eklendi! 🎉");
     }
 
     // 5. Formu ve inputu tamamen temizle
